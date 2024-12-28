@@ -108,7 +108,7 @@ all_habit_tracked = join_tracking(
 )
 
 my_button = st.radio(
-    label='Date Level', options=['Day', 'Week', 'Day of Week'], 
+    label='Date Level', options=['Day', 'Week', 'Day of Week', 'Habit'], 
     horizontal=True
 )
 
@@ -135,7 +135,7 @@ if my_button == 'Day':
     fig.update_traces(textposition='outside')
     fig.layout.yaxis.tickformat = ',.1%'
     fig.update_layout(xaxis=dict(type='category'), hovermode=False)
-    st.plotly_chart(figure_or_data=fig)
+    st.plotly_chart(figure_or_data=fig, use_container_width=True)
 
 if my_button == 'Week':
     week_habits = (
@@ -160,7 +160,7 @@ if my_button == 'Week':
     fig.update_traces(textposition='outside')
     fig.layout.yaxis.tickformat = ',.1%'
     fig.update_layout(xaxis=dict(type='category'), hovermode=False)
-    st.plotly_chart(figure_or_data=fig)
+    st.plotly_chart(figure_or_data=fig, use_container_width=True)
 
 
 if my_button == 'Day of Week':
@@ -183,4 +183,26 @@ if my_button == 'Day of Week':
     fig.update_traces(textposition='outside')
     fig.layout.xaxis.tickformat = ',.1%'
     fig.update_layout(hovermode=False)
-    st.plotly_chart(figure_or_data=fig)
+    st.plotly_chart(figure_or_data=fig, use_container_width=True)
+
+if my_button == 'Habit':
+    hab_habits = (
+        all_habit_tracked.groupby(by=['Habit'], as_index=False)
+                         .agg(Completed_Count=('Completed_Flag', 'sum'),
+                              Habit_Count=('Habit_Count', 'sum'))
+    )
+    hab_habits['Completion_Rate'] = (
+        hab_habits['Completed_Count'] / hab_habits['Habit_Count']
+    )
+    fig = px.bar(
+        data_frame=hab_habits, 
+        y='Habit', 
+        x='Completion_Rate', 
+        text=(hab_habits['Completion_Rate']*100).apply(func=lambda x: '{0:1.1f}%'.format(x)),
+        orientation='h',
+        labels={'Completion_Rate': '% Habits Completed'}
+    )
+    fig.update_traces(textposition='outside')
+    fig.layout.xaxis.tickformat = ',.1%'
+    fig.update_layout(hovermode=False)
+    st.plotly_chart(figure_or_data=fig, use_container_width=True)
