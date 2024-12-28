@@ -37,8 +37,8 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
     add = st.button(label='Add Habit')
     if add:
         client = get_client()
-        my_db = client['Habits']
-        habits_db = my_db['Habits']
+        my_db = client['habit-tracker']
+        habits_db = my_db['habits']
         habit_id = habit_name + '_' + str(object=habit_start_date)
         habit = {
             'Habit Name': habit_name,
