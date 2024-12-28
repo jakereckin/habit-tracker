@@ -43,7 +43,7 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
         habit = {
             'Habit Name': habit_name,
             'Habit Description': habit_description,
-            'Start Date': habit_start_date,
+            'Start Date': str(habit_start_date),
             'Active': habit_active,
             'Days Per Week': habit_days_per_week,
             '_id': habit_id
