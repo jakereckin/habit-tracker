@@ -17,7 +17,7 @@ def get_client():
         MongoClient: A MongoClient instance connected to the
                      specified MongoDB server.
     """
-    pwd = st.secrets['mongo_habits']['MONGBO_GBB_PASSWORD']
+    pwd = st.secrets['mongo_habits']['MONGO_HABITS_PASSWORD']
     uri =  f"mongodb+srv://jake-habits-admin:{pwd}@habits.sn5lb.mongodb.net/"
     # Create a new client and connect to the server
     client = MongoClient(uri, server_api=ServerApi('1'))
