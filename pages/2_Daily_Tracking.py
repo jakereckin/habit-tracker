@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import time
 pd.options.mode.chained_assignment = None
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
@@ -40,7 +41,7 @@ password = st.text_input(label='Password', type='password')
 if password == st.secrets['page_password']['PAGE_PASSWORD']:
     client = get_client()
     habits, habit_tracking = get_my_db(client=client)
-    todays_date = pd.to_datetime('today').strftime('%Y-%m-%d')
+    todays_date = pd.to_datetime('today')
     done_today = habit_tracking[habit_tracking['Date'] == todays_date]
     merge_drop = pd.merge(
         left=habits, right=done_today, on='Habit Name', how='left'
@@ -49,17 +50,20 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
     habit_options = merge_drop['Habit Name'].unique().tolist()
     habit_option = st.selectbox(label='Choose Habit', options=habit_options)
     completed = st.radio(label='Completed?', options=['Y', 'N'])
+    date = st.date_input(label='Date', value=todays_date)
     save = st.button(label='Save')
     if save:
-        habit_id = habit_option + '_' + str(object=todays_date)
+        my_date = date.strftime('%Y-%m-%d')
+        habit_id = habit_option + '_' + str(object=my_date)
         habit = {
             'Habit Name': habit_option,
-            'Date': str(todays_date),
+            'Date': str(my_date),
             'Completed': completed,
             '_id': habit_id
         }
         habits_db = client['habit-tracker']['habit-daily']
         habits_db.insert_one(document=habit)
         st.write('Habit Added')
+        time.sleep(1)
         st.rerun()
 
