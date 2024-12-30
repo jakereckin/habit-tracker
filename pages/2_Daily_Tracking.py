@@ -44,7 +44,8 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
     todays_date = pd.to_datetime('today')
     date = st.date_input(label='Date', value=todays_date)
     if date:
-        done_today = habit_tracking[habit_tracking['Date'] == date]
+        my_date = date.strftime('%Y-%m-%d')
+        done_today = habit_tracking[habit_tracking['Date'] == my_date]
         merge_drop = pd.merge(
             left=habits, right=done_today, on='Habit Name', how='left'
         )
@@ -54,7 +55,6 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
         completed = st.radio(label='Completed?', options=['Y', 'N'])
         save = st.button(label='Save')
         if save:
-            my_date = date.strftime('%Y-%m-%d')
             habit_id = habit_option + '_' + str(object=my_date)
             habit = {
                 'Habit Name': habit_option,
