@@ -41,6 +41,7 @@ password = st.text_input(label='Password', type='password')
 if password == st.secrets['page_password']['PAGE_PASSWORD']:
     client = get_client()
     habits, habit_tracking = get_my_db(client=client)
+    st.write('Last Habit Added:', habit_tracking['Date'].max())
     todays_date = pd.to_datetime('today')
     date = st.date_input(label='Date', value=todays_date)
     if date:

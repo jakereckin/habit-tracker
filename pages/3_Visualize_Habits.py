@@ -108,7 +108,7 @@ all_habit_tracked = join_tracking(
 )
 
 my_button = st.radio(
-    label='Date Level', options=['Day', 'Week', 'Day of Week', 'Habit'], 
+    label='Date Level', options=['Day', 'Week', 'Day of Week', 'Habit'],
     horizontal=True
 )
 
@@ -125,14 +125,14 @@ if my_button == 'Day':
     day_habits['Date'] = (
         day_habits['Date'].dt.strftime(date_format='%m/%d/%Y')
     )
-    fig = px.bar(
+    fig = px.line(
         data_frame=day_habits, 
         x='Date', 
         y='Completion_Rate', 
         text=(day_habits['Completion_Rate']*100).apply(func=lambda x: '{0:1.1f}%'.format(x)),
         labels={'Completion_Rate': '% Habits Completed'}
     )
-    fig.update_traces(textposition='outside')
+    #fig.update_traces(textposition='outside')
     fig.layout.yaxis.tickformat = ',.1%'
     fig.update_layout(xaxis=dict(type='category'), hovermode=False)
     st.plotly_chart(figure_or_data=fig, use_container_width=True)
