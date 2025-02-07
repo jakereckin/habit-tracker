@@ -123,18 +123,21 @@ if my_button == 'Day':
     )
     day_habits = day_habits.sort_values(by='Date')
     day_habits['Date'] = (
-        day_habits['Date'].dt.strftime(date_format='%m/%d/%Y')
+        day_habits['Date'].dt.date
     )
     fig = px.line(
         data_frame=day_habits, 
         x='Date', 
         y='Completion_Rate', 
-        text=(day_habits['Completion_Rate']*100).apply(func=lambda x: '{0:1.1f}%'.format(x)),
         labels={'Completion_Rate': '% Habits Completed'}
     )
-    #fig.update_traces(textposition='outside')
     fig.layout.yaxis.tickformat = ',.1%'
-    fig.update_layout(xaxis=dict(type='category'), hovermode=False)
+    fig.update_xaxes(
+    dtick='D',
+    tickformat='%Y-%m-%d',
+    tickangle=45
+    )
+    fig.update_layout(xaxis=dict(type='category'))
     st.plotly_chart(figure_or_data=fig, use_container_width=True)
 
 if my_button == 'Week':
@@ -148,18 +151,21 @@ if my_button == 'Week':
     )
     week_habits = week_habits.sort_values(by='Week Start Date')
     week_habits['Week Start Date'] = (
-        week_habits['Week Start Date'].dt.strftime(date_format='%m/%d/%Y')
+        week_habits['Week Start Date'].dt.date
     )
-    fig = px.bar(
+    fig = px.line(
         data_frame=week_habits, 
         x='Week Start Date', 
         y='Completion_Rate', 
-        text=(week_habits['Completion_Rate']*100).apply(func=lambda x: '{0:1.1f}%'.format(x)),
         labels={'Completion_Rate': '% Habits Completed'}
     )
-    fig.update_traces(textposition='outside')
+    fig.update_xaxes(
+        dtick='D',
+        tickformat='%Y-%m-%d',
+        tickangle=45
+    )
     fig.layout.yaxis.tickformat = ',.1%'
-    fig.update_layout(xaxis=dict(type='category'), hovermode=False)
+    fig.update_layout(xaxis=dict(type='category'))
     st.plotly_chart(figure_or_data=fig, use_container_width=True)
 
 
@@ -169,6 +175,11 @@ if my_button == 'Day of Week':
                          .agg(Completed_Count=('Completed_Flag', 'sum'),
                               Habit_Count=('Habit_Count', 'sum'))
     )
+    dow_habits['DAY_NUM'] = dow_habits['Day of Week'].map({
+        'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4,
+        'Friday': 5, 'Saturday': 6, 'Sunday': 7
+    })
+    dow_habits = dow_habits.sort_values(by='DAY_NUM', ascending=False)
     dow_habits['Completion_Rate'] = (
         dow_habits['Completed_Count'] / dow_habits['Habit_Count']
     )
@@ -180,7 +191,7 @@ if my_button == 'Day of Week':
         orientation='h',
         labels={'Completion_Rate': '% Habits Completed'}
     )
-    fig.update_traces(textposition='outside')
+    fig.update_traces(textposition='inside')
     fig.layout.xaxis.tickformat = ',.1%'
     fig.update_layout(hovermode=False)
     st.plotly_chart(figure_or_data=fig, use_container_width=True)
@@ -202,7 +213,7 @@ if my_button == 'Habit':
         orientation='h',
         labels={'Completion_Rate': '% Habits Completed'}
     )
-    fig.update_traces(textposition='outside')
+    fig.update_traces(textposition='inside')
     fig.layout.xaxis.tickformat = ',.1%'
     fig.update_layout(hovermode=False)
     st.plotly_chart(figure_or_data=fig, use_container_width=True)
