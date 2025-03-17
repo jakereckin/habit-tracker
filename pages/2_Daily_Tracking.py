@@ -44,7 +44,7 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
     #st.write('Last Habit Added:', habit_tracking['Date'].max())
     todays_date = pd.to_datetime('today', utc=True)
     date_df = pd.DataFrame(data=[todays_date], columns=['Date'])
-    date_df['Date'] = date_df['Date'].dt.tz_localize('UTC').dt.tz_convert('US/Central')
+    date_df['Date'] = date_df['Date'].dt.tz_convert('US/Central')
     st.write(date_df)
     date = st.date_input(label='Date', value=todays_date)
     if date:
