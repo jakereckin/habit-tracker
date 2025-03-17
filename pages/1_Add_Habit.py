@@ -31,7 +31,7 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
     habit_description = st.text_area(label='Habit Description')
     habit_start_date = st.date_input(label='Start Date')
     habit_active = st.radio(label='Active', options=['Y', 'N'])
-    habit_days_per_week = st.number_input(
+    difficulty = st.number_input(
         label='Difficulty', min_value=1, max_value=5
     )
     add = st.button(label='Add Habit')
@@ -45,7 +45,7 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
             'Habit Description': habit_description,
             'Start Date': str(habit_start_date),
             'Active': habit_active,
-            'Days Per Week': habit_days_per_week,
+            'Difficulty': difficulty,
             '_id': habit_id
         }
         habits_db.insert_one(document=habit)

@@ -42,6 +42,10 @@ password = st.text_input(label='Password', type='password')
 if password == st.secrets['page_password']['PAGE_PASSWORD']:
     client = get_client()
     habits, habit_tracking = get_my_db(client=client)
+    todays_data = pd.merge(
+        left=habits, right=habit_tracking, on='Habit Name', how='left'
+    )
+    todays_data['DATE_ONLY'] = pd.to_datetime(todays_data['Date']).dt.date
     #st.write('Last Habit Added:', habit_tracking['Date'].max())
     date = dt.datetime.now(dt.timezone.utc)
     todays_date = pd.to_datetime(date, utc=True)
@@ -50,12 +54,18 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
 
     date_col, time_col =  st.columns(spec=2)
     with date_col:
-        date = st.date_input(label='Date', value=date_df['Date'].dt.date.values[0])
+        date = st.date_input(
+            label='Date', value=date_df['Date'].dt.date.values[0]
+        )
     with time_col:
         time_now = st.time_input(label='Time')
     
-
-    my_date = date.strftime('%Y-%m-%d') + ' ' + time_now.strftime('%H:%M')
+    my_points = todays_data[todays_data['DATE_ONLY'] == date]
+    my_points = my_points.Difficulty.sum()
+    st.write('Current Daily Points:', my_points)
+    my_date = (
+        date.strftime('%Y-%m-%d') + ' ' + time_now.strftime(format='%H:%M')
+    )
     habit_options = habits['Habit Name'].unique().tolist()
     habit_option = st.selectbox(label='Choose Habit', options=habit_options)
     completed = st.radio(label='Completed?', options=['Y', 'N'])
