@@ -53,24 +53,25 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
         date = st.date_input(label='Date', value=date_df['Date'].dt.date.values[0])
     with time_col:
         time_now = st.time_input(label='Time', value=date_df['Date'].dt.time.values[0])
-    if date:
-        my_date = date.strftime('%Y-%m-%d') + ' ' + time_now.strftime('%H:%M')
-        habit_options = habits['Habit Name'].unique().tolist()
-        habit_option = st.selectbox(label='Choose Habit', options=habit_options)
-        completed = st.radio(label='Completed?', options=['Y', 'N'])
-        save = st.button(label='Save')
-        if save:
-            habit_id = habit_option + '_' + str(object=my_date)
-            st.write(habit_id)
-            habit = {
+    
+
+    my_date = date.strftime('%Y-%m-%d') + ' ' + time_now.strftime('%H:%M')
+    habit_options = habits['Habit Name'].unique().tolist()
+    habit_option = st.selectbox(label='Choose Habit', options=habit_options)
+    completed = st.radio(label='Completed?', options=['Y', 'N'])
+    save = st.button(label='Save')
+    if save:
+        habit_id = habit_option + '_' + str(object=my_date)
+        st.write(habit_id)
+        habit = {
                 'Habit Name': habit_option,
                 'Date': str(my_date),
                 'Completed': completed,
                 '_id': habit_id
-            }
-            habits_db = client['habit-tracker']['habit-daily-tracking']
-            habits_db.insert_one(document=habit)
-            st.write('Habit Added')
-            time.sleep(1)
-            st.rerun()
+        }
+        habits_db = client['habit-tracker']['habit-daily-tracking']
+        habits_db.insert_one(document=habit)
+        st.write('Habit Added')
+        time.sleep(1)
+        st.rerun()
 
