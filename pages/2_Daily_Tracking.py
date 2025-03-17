@@ -32,7 +32,7 @@ def get_my_db(client):
     habit_tracker_db = my_db['habit-daily-tracking']
     habits = pd.DataFrame(data=list(habits_db.find())).drop(columns=['_id'])
     habit_tracking = (
-        pd.DataFrame(data=list(habit_tracker_db.find()))#.drop(columns=['_id'])
+        pd.DataFrame(data=list(habit_tracker_db.find())).drop(columns=['_id'])
     )
     return habits, habit_tracking
 
@@ -47,23 +47,28 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
     todays_date = pd.to_datetime(date, utc=True)
     date_df = pd.DataFrame(data=[todays_date], columns=['Date'])
     date_df['Date'] = date_df['Date'].dt.tz_convert('US/Central')
-    st.write(date_df)
-    date = st.date_input(label='Date', value=todays_date)
+
+    date_col, time_col =  st.columns(2)
+    with date_col:
+        date = st.date_input(label='Date', value=date_df['Date'].dt.date.values[0])
+    with time_col:
+        time_now = st.time_input(label='Time', value=date_df['Date'].dt.time.values[0])
     if date:
-        my_date = date.strftime('%Y-%m-%d')
+        my_date = date.strftime('%Y-%m-%d') + ' ' + time_now.strftime('%H:%M')
         habit_options = habits['Habit Name'].unique().tolist()
         habit_option = st.selectbox(label='Choose Habit', options=habit_options)
         completed = st.radio(label='Completed?', options=['Y', 'N'])
         save = st.button(label='Save')
         if save:
             habit_id = habit_option + '_' + str(object=my_date)
+            st.write(habit_id)
             habit = {
                 'Habit Name': habit_option,
                 'Date': str(my_date),
                 'Completed': completed,
                 '_id': habit_id
             }
-            habits_db = client['habit-tracker']['habit-daily']
+            habits_db = client['habit-tracker']['habit-daily-tracking']
             habits_db.insert_one(document=habit)
             st.write('Habit Added')
             time.sleep(1)
