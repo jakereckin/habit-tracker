@@ -32,13 +32,13 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
     habit_start_date = st.date_input(label='Start Date')
     habit_active = st.radio(label='Active', options=['Y', 'N'])
     habit_days_per_week = st.number_input(
-        label='Days Per Week', min_value=1, max_value=7
+        label='Difficulty', min_value=1, max_value=5
     )
     add = st.button(label='Add Habit')
     if add:
         client = get_client()
         my_db = client['habit-tracker']
-        habits_db = my_db['habits']
+        habits_db = my_db['habit-list']
         habit_id = habit_name + '_' + str(object=habit_start_date)
         habit = {
             'Habit Name': habit_name,

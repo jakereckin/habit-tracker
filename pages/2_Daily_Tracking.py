@@ -27,11 +27,11 @@ def get_client():
 # ----------------------------------------------------------------------------
 def get_my_db(client):
     my_db = client['habit-tracker']
-    habits_db = my_db['habits']
-    habit_tracker_db = my_db['habit-daily']
+    habits_db = my_db['habit-list']
+    habit_tracker_db = my_db['habit-daily-tracking']
     habits = pd.DataFrame(data=list(habits_db.find())).drop(columns=['_id'])
     habit_tracking = (
-        pd.DataFrame(data=list(habit_tracker_db.find())).drop(columns=['_id'])
+        pd.DataFrame(data=list(habit_tracker_db.find()))#.drop(columns=['_id'])
     )
     return habits, habit_tracking
 
@@ -41,17 +41,14 @@ password = st.text_input(label='Password', type='password')
 if password == st.secrets['page_password']['PAGE_PASSWORD']:
     client = get_client()
     habits, habit_tracking = get_my_db(client=client)
-    st.write('Last Habit Added:', habit_tracking['Date'].max())
+    #st.write('Last Habit Added:', habit_tracking['Date'].max())
     todays_date = pd.to_datetime('today')
+    date_df = pd.DataFrame(data=[todays_date], columns=['Date'])
+    st.write(date_df)
     date = st.date_input(label='Date', value=todays_date)
     if date:
         my_date = date.strftime('%Y-%m-%d')
-        done_today = habit_tracking[habit_tracking['Date'] == my_date]
-        merge_drop = pd.merge(
-            left=habits, right=done_today, on='Habit Name', how='left'
-        )
-        merge_drop = merge_drop[merge_drop['Date'].isnull()]
-        habit_options = merge_drop['Habit Name'].unique().tolist()
+        habit_options = habits['Habit Name'].unique().tolist()
         habit_option = st.selectbox(label='Choose Habit', options=habit_options)
         completed = st.radio(label='Completed?', options=['Y', 'N'])
         save = st.button(label='Save')
