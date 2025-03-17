@@ -48,11 +48,11 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
     date_df = pd.DataFrame(data=[todays_date], columns=['Date'])
     date_df['Date'] = date_df['Date'].dt.tz_convert('US/Central')
 
-    date_col, time_col =  st.columns(2)
+    date_col, time_col =  st.columns(spec=2)
     with date_col:
         date = st.date_input(label='Date', value=date_df['Date'].dt.date.values[0])
     with time_col:
-        time_now = st.time_input(label='Time', value=date_df['Date'].dt.time.values[0])
+        time_now = st.time_input(label='Time')
     
 
     my_date = date.strftime('%Y-%m-%d') + ' ' + time_now.strftime('%H:%M')
