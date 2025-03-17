@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import time
+import datetime as dt
 pd.options.mode.chained_assignment = None
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
@@ -42,7 +43,8 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
     client = get_client()
     habits, habit_tracking = get_my_db(client=client)
     #st.write('Last Habit Added:', habit_tracking['Date'].max())
-    todays_date = pd.to_datetime('today', utc=True)
+    date = dt.datetime.now(dt.timezone.utc)
+    todays_date = pd.to_datetime(date, utc=True)
     date_df = pd.DataFrame(data=[todays_date], columns=['Date'])
     date_df['Date'] = date_df['Date'].dt.tz_convert('US/Central')
     st.write(date_df)
