@@ -34,6 +34,9 @@ st.header(body='Habit Tracker', divider='blue')
 
 if st.session_state.login_status:
     st.write('Welcome', st.session_state.user_name)
+    logout = st.button(label='Logout')
+    if logout:
+        st.session_state.login_status = False
 else:
     user_name = st.text_input(label='Username')
     password = st.text_input(label='Password', type='password')
