@@ -34,12 +34,13 @@ def get_my_db(client):
     habit_tracking = (
         pd.DataFrame(data=list(habit_tracker_db.find())).drop(columns=['_id'])
     )
+    habits = habits[habits['Username'] == st.session_state.user_name]
+    habit_tracking = habit_tracking[habit_tracking['Username'] == st.session_state.user_name]
     return habits, habit_tracking
 
 
 # ----------------------------------------------------------------------------
-password = st.text_input(label='Password', type='password')
-if password == st.secrets['page_password']['PAGE_PASSWORD']:
+if st.session_state.login_status:
     client = get_client()
     habits, habit_tracking = get_my_db(client=client)
     todays_data = pd.merge(
@@ -77,6 +78,7 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
                 'Habit Name': habit_option,
                 'Date': str(my_date),
                 'Completed': completed,
+                'Username': st.session_state.user_name,
                 '_id': habit_id
         }
         habits_db = client['habit-tracker']['habit-daily-tracking']
@@ -84,4 +86,5 @@ if password == st.secrets['page_password']['PAGE_PASSWORD']:
         st.write('Habit Added')
         time.sleep(1)
         st.rerun()
-
+else:
+    st.write('Please login to track habits')
