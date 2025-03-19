@@ -28,38 +28,41 @@ def get_my_db(client):
     users = pd.DataFrame(data=list(users_db.find())).drop(columns=['_id'])
     return users
 
-st.session_state.login_status = False
 
 st.header(body='Habit Tracker', divider='blue')
 
-user_name = st.text_input(label='Username')
-password = st.text_input(label='Password', type='password')
-login = st.button(label='Login')
-signup = st.button(label='Sign Up')
-if login:
-    client = get_client()
-    users = get_my_db(client=client)
-    this_user = users[(users['Username'] == user_name) & (users['Password'] == password)]
-    if this_user.shape[0] > 0:
-        st.write('Login Successful')
-        st.session_state.login_status = True
-        st.session_state.user_name = user_name
-    else:
-        st.write('Login Failed')
 
-if signup:
-    client = get_client()
-    users = get_my_db(client=client)
-    this_user = users[(users['Username'] == user_name)]
-    if this_user.shape[0] > 0:
-        st.write('User already exists')
-    else:
-        user = {
-            'Username': user_name,
-            'Password': password,
-        }
-        users_db = client['habit-tracker']['users']
-        users_db.insert_one(document=user)
-        st.write('User Added')
-        st.session_state.login_status = True
-        st.session_state.user_name = user_name
+if st.session_state.login_status:
+    st.write('Welcome', st.session_state.user_name)
+else:
+    user_name = st.text_input(label='Username')
+    password = st.text_input(label='Password', type='password')
+    login = st.button(label='Login')
+    signup = st.button(label='Sign Up')
+    if login:
+        client = get_client()
+        users = get_my_db(client=client)
+        this_user = users[(users['Username'] == user_name) & (users['Password'] == password)]
+        if this_user.shape[0] > 0:
+            st.write('Login Successful')
+            st.session_state.login_status = True
+            st.session_state.user_name = user_name
+        else:
+            st.write('Login Failed')
+
+    if signup:
+        client = get_client()
+        users = get_my_db(client=client)
+        this_user = users[(users['Username'] == user_name)]
+        if this_user.shape[0] > 0:
+            st.write('User already exists')
+        else:
+            user = {
+                'Username': user_name,
+                'Password': password,
+            }
+            users_db = client['habit-tracker']['users']
+            users_db.insert_one(document=user)
+            st.write('User Added')
+            st.session_state.login_status = True
+            st.session_state.user_name = user_name
