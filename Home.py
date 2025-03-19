@@ -46,3 +46,20 @@ if login:
         st.session_state.user_name = user_name
     else:
         st.write('Login Failed')
+
+if signup:
+    client = get_client()
+    users = get_my_db(client=client)
+    this_user = users[(users['Username'] == user_name)]
+    if this_user.shape[0] > 0:
+        st.write('User already exists')
+    else:
+        user = {
+            'Username': user_name,
+            'Password': password,
+        }
+        users_db = client['habit-tracker']['users']
+        users_db.insert_one(document=user)
+        st.write('User Added')
+        st.session_state.login_status = True
+        st.session_state.user_name = user_name
