@@ -46,6 +46,7 @@ if st.session_state.login_status:
                 'Start Date': str(habit_start_date),
                 'Active': habit_active,
                 'Difficulty': difficulty,
+                'Username': st.session_state.user_name,
                 '_id': habit_id
         }
         habits_db.insert_one(document=habit)
