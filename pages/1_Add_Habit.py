@@ -55,4 +55,4 @@ else:
     st.write('Please login to add a habit')
     login_page = st.button(label='Login')
     if login_page:
-        st.switch_page('Home')
+        st.switch_page('Home.py')
