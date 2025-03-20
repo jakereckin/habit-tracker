@@ -53,3 +53,6 @@ if st.session_state.login_status:
         st.write('Habit Added')
 else:
     st.write('Please login to add a habit')
+    login_page = st.button(label='Login')
+    if login_page:
+        st.switch_page('Home')
