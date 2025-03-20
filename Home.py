@@ -30,7 +30,8 @@ def get_my_db(client):
 
 
 st.header(body='Habit Tracker', divider='blue')
-
+if 'login_status' not in st.session_state:
+    st.session_state.login_status = False
 
 if st.session_state.login_status:
     st.write('Welcome', st.session_state.user_name)
