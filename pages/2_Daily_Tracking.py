@@ -88,3 +88,6 @@ if st.session_state.login_status:
         st.rerun()
 else:
     st.write('Please login to track habits')
+    login_page = st.button(label='Login')
+    if login_page:
+        st.switch_page('Home.py')
