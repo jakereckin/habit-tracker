@@ -76,7 +76,11 @@ if st.session_state.login_status:
     
     my_points = todays_data[todays_data['DATE_ONLY'] == date]
     my_points = my_points.Difficulty.sum()
-    my_prev_points = habit_tracking[pd.to_datetime(habit_tracking['Date']).dt.date == (date-dt.timedelta(days=1))]
+    prev_day = date - dt.timedelta(days=1)
+    st.write(prev_day)
+    my_prev_points = habit_tracking[
+        pd.to_datetime(habit_tracking['Date']).dt.date == prev_day
+    ]
     st.write('Current Daily Points:', my_points)
     st.write('Previous Daily Points:', my_prev_points.Difficulty.sum())
     my_date = (
