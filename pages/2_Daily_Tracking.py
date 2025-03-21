@@ -43,6 +43,10 @@ def get_my_db(client):
 if 'login_status' not in st.session_state:
     st.session_state.login_status = False
 if st.session_state.login_status:
+    st.header(
+        body=f'Add Daily Habit for {st.session_state.user_name}',
+        divider='blue'
+    )
     client = get_client()
     habits, habit_tracking = get_my_db(client=client)
     todays_data = pd.merge(
@@ -61,7 +65,7 @@ if st.session_state.login_status:
             label='Date', value=date_df['Date'].dt.date.values[0]
         )
     with time_col:
-        time_now = st.time_input(label='Time')
+        time_now = st.time_input(label='Time', value=date_df['Date'].dt.time.values[0])
     
     my_points = todays_data[todays_data['DATE_ONLY'] == date]
     my_points = my_points.Difficulty.sum()
