@@ -40,6 +40,8 @@ def get_my_db(client):
 
 
 # ----------------------------------------------------------------------------
+if 'login_status' not in st.session_state:
+    st.session_state.login_status = False
 if st.session_state.login_status:
     client = get_client()
     habits, habit_tracking = get_my_db(client=client)

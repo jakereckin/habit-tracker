@@ -25,7 +25,9 @@ def get_client():
 
 
 # ----------------------------------------------------------------------------
-
+if 'login_status' not in st.session_state:
+    st.session_state.login_status = False
+    
 if st.session_state.login_status:
     habit_name = st.text_input(label='Habit Name')
     habit_description = st.text_area(label='Habit Description')
