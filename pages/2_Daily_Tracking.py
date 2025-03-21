@@ -76,13 +76,16 @@ if st.session_state.login_status:
     
     my_points = todays_data[todays_data['DATE_ONLY'] == date]
     my_points = my_points.Difficulty.sum()
+    my_prev_points = habit_tracking[habit_tracking['Date'] == (date-dt.timedelta(days=1))]
     st.write('Current Daily Points:', my_points)
+    st.write('Previous Daily Points:', my_prev_points.Difficulty.sum())
     my_date = (
         date.strftime('%Y-%m-%d') + ' ' + time_now.strftime(format='%H:%M')
     )
     habit_options = habits['Habit Name'].unique().tolist()
-    habit_option = st.radio(label='Choose Habit', options=habit_options, horizontal=True)
-    completed = st.radio(label='Completed?', options=['Y', 'N'])
+    habit_option = st.radio(
+        label='Choose Habit', options=habit_options, horizontal=True
+    )
     save = st.button(label='Save')
     if save:
         habit_id = habit_option + '_' + str(object=my_date)
@@ -90,7 +93,6 @@ if st.session_state.login_status:
         habit = {
                 'Habit Name': habit_option,
                 'Date': str(my_date),
-                'Completed': completed,
                 'Username': st.session_state.user_name,
                 '_id': habit_id
         }
