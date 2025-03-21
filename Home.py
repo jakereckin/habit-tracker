@@ -48,9 +48,13 @@ else:
         users = get_my_db(client=client)
         this_user = users[(users['Username'] == user_name) & (users['Password'] == password)]
         if this_user.shape[0] > 0:
+            del password
+            del login
+            del signup
             st.write('Login Successful')
             st.session_state.login_status = True
             st.session_state.user_name = user_name
+            del user_name
         else:
             st.write('Login Failed')
 

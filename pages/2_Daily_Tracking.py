@@ -70,7 +70,7 @@ if st.session_state.login_status:
         date.strftime('%Y-%m-%d') + ' ' + time_now.strftime(format='%H:%M')
     )
     habit_options = habits['Habit Name'].unique().tolist()
-    habit_option = st.selectbox(label='Choose Habit', options=habit_options)
+    habit_option = st.radio(label='Choose Habit', options=habit_options, horizontal=True)
     completed = st.radio(label='Completed?', options=['Y', 'N'])
     save = st.button(label='Save')
     if save:
