@@ -58,14 +58,21 @@ if st.session_state.login_status:
     todays_date = pd.to_datetime(date, utc=True)
     date_df = pd.DataFrame(data=[todays_date], columns=['Date'])
     date_df['Date'] = date_df['Date'].dt.tz_convert('US/Central')
-
+    start_time = dt.time(0, 0)
+    end_time = dt.time(23, 59)
     date_col, time_col =  st.columns(spec=2)
     with date_col:
         date = st.date_input(
             label='Date', value=date_df['Date'].dt.date.values[0]
         )
     with time_col:
-        time_now = st.time_input(label='Time', value=date_df['Date'].dt.time.values[0])
+        time_now =  st.slider(
+            label="Select Time",
+            value=(dt.time(12, 0)),
+            min_value=start_time,
+            max_value=end_time,
+            format="HH:mm"
+    )
     
     my_points = todays_data[todays_data['DATE_ONLY'] == date]
     my_points = my_points.Difficulty.sum()
