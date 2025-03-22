@@ -58,7 +58,7 @@ else:
         else:
             st.write('Login Failed')
 
-    if signup:
+    elif signup:
         client = get_client()
         users = get_my_db(client=client)
         this_user = users[(users['Username'] == user_name)]
