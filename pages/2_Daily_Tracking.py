@@ -74,8 +74,14 @@ if st.session_state.login_status:
             format="HH:mm"
     )
     
-    my_points = todays_data[todays_data['DATE_ONLY'] == date]
-    my_points = my_points.Difficulty.sum()
+    today_df = todays_data[todays_data['DATE_ONLY'] == date]
+    today_df['Date'] = pd.to_datetime(
+        today_df['Date'], errors='coerce'
+    )
+    today_df['TIME'] = today_df['Date'].dt.time
+    today_df = today_df.sort_values(by='Date').reset_index(drop=True)
+    need_df = today_df[['Habit Name', 'TIME']]
+    my_points = today_df.Difficulty.sum()
     st.write('Current Daily Points:', my_points)
     my_date = (
         date.strftime('%Y-%m-%d') + ' ' + time_now.strftime(format='%H:%M')
@@ -84,6 +90,7 @@ if st.session_state.login_status:
     habit_option = st.radio(
         label='Choose Habit', options=habit_options, horizontal=True
     )
+    st.dataframe(data=need_df,  hide_index=True)
     save = st.button(label='Save')
     if save:
         habit_id = habit_option + '_' + str(object=my_date)
