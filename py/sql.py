@@ -28,3 +28,20 @@ def insert_habits():
     VALUES (?, ?, ?, ?, ?, ?, ?)
     """
     return sql
+
+def add_daily_habits():
+    sql = """
+    INSERT INTO daily_tracking (EMAIL, HABIT_NAME, DATE, TIME, COUNT_COMPLETED)
+    VALUES (?, ?, ?, ?, ?)
+    """
+    return sql
+
+def get_current_day():
+    sql = """
+    SELECT *
+      FROM daily_tracking
+      INNER JOIN users
+        ON daily_tracking.EMAIL = users.EMAIL
+     WHERE DATE = DATE('now', 'localtime')
+    """
+    return sql
