@@ -35,7 +35,9 @@ def get_my_db(client):
         pd.DataFrame(data=list(habit_tracker_db.find())).drop(columns=['_id'])
     )
     habits = habits[habits['Username'] == st.session_state.user_name]
-    habit_tracking = habit_tracking[habit_tracking['Username'] == st.session_state.user_name]
+    habit_tracking = habit_tracking[
+        habit_tracking['Username'] == st.session_state.user_name
+    ]
     return habits, habit_tracking
 
 

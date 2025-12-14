@@ -1,31 +1,15 @@
 import streamlit as st
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
+import sqlitecloud
+from py import sql, data_source
 import pandas as pd
 
 
 # ----------------------------------------------------------------------------
-@st.cache_resource
-def get_client():
-    """
-    Establishes a connection to the MongoDB server using credentials
-    stored in Streamlit secrets.
-
-    Returns:
-        MongoClient: A MongoClient instance connected to the
-                     specified MongoDB server.
-    """
-    pwd = st.secrets['mongo_habits']['MONGO_HABITS_PASSWORD']
-    uri =  f"mongodb+srv://jake-habits-admin:{pwd}@habits.sn5lb.mongodb.net/"
-    # Create a new client and connect to the server
-    client = MongoClient(uri, server_api=ServerApi('1'))
-    return client
-
-# ----------------------------------------------------------------------------
-def get_my_db(client):
-    my_db = client['habit-tracker']
-    users_db = my_db['users']
-    users = pd.DataFrame(data=list(users_db.find())).drop(columns=['_id'])
+def get_data():
+    users = data_source.run_query(
+        sql=sql.select_users(),
+        connection=st.secrets['habits_connection']['DB_CONNECTION']
+    )
     return users
 
 
@@ -39,38 +23,41 @@ if st.session_state.login_status:
     if logout:
         st.session_state.login_status = False
 else:
-    user_name = st.text_input(label='Username')
+    email = st.text_input(label='Email')
     password = st.text_input(label='Password', type='password')
     login = st.button(label='Login')
     signup = st.button(label='Sign Up')
     if login:
-        client = get_client()
-        users = get_my_db(client=client)
-        this_user = users[(users['Username'] == user_name) & (users['Password'] == password)]
+        users = get_data()
+        this_user = users[
+            (users['EMAIL'] == email) 
+            & (users['PASSWORD'] == password)
+        ]
         if this_user.shape[0] > 0:
             del password
             del login
             del signup
             st.write('Login Successful')
             st.session_state.login_status = True
-            st.session_state.user_name = user_name
-            del user_name
+            st.session_state.email = email
+            del email
         else:
             st.write('Login Failed')
 
     elif signup:
-        client = get_client()
-        users = get_my_db(client=client)
-        this_user = users[(users['Username'] == user_name)]
+        users = get_data()
+        this_user = users[(users['EMAIL'] == email)]
         if this_user.shape[0] > 0:
             st.write('User already exists')
         else:
-            user = {
-                'Username': user_name,
-                'Password': password,
-            }
-            users_db = client['habit-tracker']['users']
-            users_db.insert_one(document=user)
+            with sqlitecloud.connect(
+                st.secrets['habits_connection']['DB_CONNECTION']
+            ) as conn:
+                conn.execute(
+                    sql=sql.insert_user_sql(),
+                    parameters=(email, password)
+                )
+                conn.commit()
             st.write('User Added')
             st.session_state.login_status = True
-            st.session_state.user_name = user_name
+            st.session_state.user_name = email
