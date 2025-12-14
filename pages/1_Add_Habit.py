@@ -1,27 +1,16 @@
 import streamlit as st
-import sys
 import pandas as pd
+import time
+import sqlitecloud
 pd.options.mode.chained_assignment = None
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
+from py import sql, data_source
 
-
-# ----------------------------------------------------------------------------
-@st.cache_resource
-def get_client():
-    """
-    Establishes a connection to the MongoDB server using credentials
-    stored in Streamlit secrets.
-
-    Returns:
-        MongoClient: A MongoClient instance connected to the
-                     specified MongoDB server.
-    """
-    pwd = st.secrets['mongo_habits']['MONGO_HABITS_PASSWORD']
-    uri =  f"mongodb+srv://jake-habits-admin:{pwd}@habits.sn5lb.mongodb.net/"
-    # Create a new client and connect to the server
-    client = MongoClient(uri, server_api=ServerApi('1'))
-    return client
+def get_habits():
+    habits = data_source.run_query(
+        sql=sql.get_habits(),
+        connection=st.secrets['habits_connection']['DB_CONNECTION']
+    )
+    return habits
 
 
 # ----------------------------------------------------------------------------
@@ -29,30 +18,47 @@ if 'login_status' not in st.session_state:
     st.session_state.login_status = False
     
 if st.session_state.login_status:
-    habit_name = st.text_input(label='Habit Name')
-    habit_description = st.text_area(label='Habit Description')
-    habit_start_date = st.date_input(label='Start Date')
-    habit_active = st.radio(label='Active', options=['Y', 'N'])
-    difficulty = st.number_input(
-            label='Difficulty', min_value=1, max_value=5
-    )
-    add = st.button(label='Add Habit')
-    if add:
-        client = get_client()
-        my_db = client['habit-tracker']
-        habits_db = my_db['habit-list']
-        habit_id = habit_name + '_' + str(object=habit_start_date)
-        habit = {
-                'Habit Name': habit_name,
-                'Habit Description': habit_description,
-                'Start Date': str(habit_start_date),
-                'Active': habit_active,
-                'Difficulty': difficulty,
-                'Username': st.session_state.user_name,
-                '_id': habit_id
-        }
-        habits_db.insert_one(document=habit)
-        st.write('Habit Added')
+    habits_db = get_habits()
+    current_habits = habits_db[
+        habits_db['EMAIL'] == st.session_state.email
+    ]
+    st.dataframe(data=current_habits)
+    goal_types = ['NUMERIC', 'BINARY']
+    with st.form(key='add_habit_form', clear_on_submit=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            habit_name = st.text_input(label='Habit Name')
+            habit_active = st.radio(label='Active', options=['Y', 'N'])
+        with col2:
+            habit_description = st.text_area(label='Habit Description')
+            habit_start_date = st.date_input(label='Start Date')
+        with col3:
+            goal_type = st.radio(label='Goal Type', options=goal_types)
+            difficulty = st.number_input(
+                    label='Difficulty', min_value=1, max_value=5
+            )
+        add = st.form_submit_button(label='Add Habit', key='add_habit')
+        if add:
+            time.sleep(1) 
+            with sqlitecloud.connect(
+                st.secrets['habits_connection']['DB_CONNECTION']
+            ) as conn:
+                conn.execute(
+                    sql=sql.insert_habits(),
+                    parameters=(
+                        st.session_state.email,
+                        habit_name,
+                        habit_description,
+                        habit_start_date,
+                        habit_active,
+                        goal_type,
+                        difficulty
+                    )
+                )
+                conn.commit()
+                
+            st.write('Habit Added')
+            st.rerun()
 else:
     st.write('Please login to add a habit')
     login_page = st.button(label='Login')
