@@ -1,8 +1,13 @@
 import sqlitecloud
 import pandas as pd
+from typing import Any, Optional, Sequence
 
 
-def run_query(sql: str, connection: str, params=[]) -> pd.DataFrame:
+def run_query(
+    sql: str,
+    connection: str,
+    params: Optional[Sequence[Any]] = None,
+) -> pd.DataFrame:
     """
     Runs a SQL query on the given SQLite database connection.
 
@@ -15,4 +20,4 @@ def run_query(sql: str, connection: str, params=[]) -> pd.DataFrame:
         pandas DataFrame.
     """
     with sqlitecloud.connect(connection) as conn:
-        return pd.read_sql(sql, conn, params=params)
+        return pd.read_sql(sql, conn, params=params or [])
