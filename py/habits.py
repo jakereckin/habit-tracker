@@ -1,4 +1,5 @@
 import datetime as dt
+from typing import Optional
 
 import sqlitecloud
 import streamlit as st
@@ -49,7 +50,11 @@ def create_habit(
     start_date: dt.date,
     goal_type: str,
     difficulty: int,
+    daily_goal: Optional[float] = None,
 ) -> None:
+    if goal_type == "NUMERIC" and (daily_goal is None or daily_goal <= 0):
+        raise ValueError("Numeric habits require a daily goal greater than zero.")
+
     with sqlitecloud.connect(get_db_connection()) as conn:
         conn.execute(
             sql=sql.insert_habits(),
@@ -61,6 +66,7 @@ def create_habit(
                 "Y",
                 goal_type,
                 difficulty,
+                daily_goal,
             ),
         )
         conn.commit()

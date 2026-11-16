@@ -27,7 +27,8 @@ class HabitSqlTests(unittest.TestCase):
                 HABIT_NAME TEXT,
                 DATE TEXT,
                 TIME TEXT,
-                COUNT_COMPLETED INTEGER
+                COUNT_COMPLETED REAL,
+                DAILY_GOAL REAL
             );
             """
         )
@@ -100,3 +101,70 @@ class HabitSqlTests(unittest.TestCase):
             "SELECT COUNT(*) FROM daily_tracking"
         ).fetchone()[0]
         self.assertEqual(count, 1)
+
+    def test_numeric_goal_is_saved_and_progress_accumulates(self):
+        self.connection.execute(
+            "INSERT INTO habit_list VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                "person@example.com",
+                "Drink water",
+                "",
+                "11/13/2026",
+                "Y",
+                "NUMERIC",
+                3,
+            ),
+        )
+        self.connection.execute(
+            sql.update_daily_goal(),
+            (100, "person@example.com", "Drink water", "11/13/2026"),
+        )
+        self.connection.execute(
+            sql.insert_daily_goal(),
+            (
+                "person@example.com",
+                "Drink water",
+                "11/13/2026",
+                "09:00",
+                100,
+                "person@example.com",
+                "Drink water",
+                "11/13/2026",
+            ),
+        )
+
+        for amount in (25, 10):
+            self.connection.execute(
+                sql.add_numeric_progress(),
+                (
+                    amount,
+                    100,
+                    "09:30",
+                    "person@example.com",
+                    "Drink water",
+                    "11/13/2026",
+                ),
+            )
+            self.connection.execute(
+                sql.insert_numeric_progress(),
+                (
+                    "person@example.com",
+                    "Drink water",
+                    "11/13/2026",
+                    "09:30",
+                    amount,
+                    100,
+                    "person@example.com",
+                    "Drink water",
+                    "11/13/2026",
+                ),
+            )
+
+        progress = self.connection.execute(
+            """
+            SELECT COUNT_COMPLETED, DAILY_GOAL
+              FROM daily_tracking
+             WHERE HABIT_NAME = 'Drink water'
+            """
+        ).fetchone()
+        self.assertEqual(progress, (35.0, 100.0))

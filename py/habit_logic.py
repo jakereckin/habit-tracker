@@ -47,17 +47,22 @@ def completed_habits_for_date(
 
 
 def daily_progress(
-    tracking: pd.DataFrame, habit_name: str, target_date: dt.date
+    tracking: pd.DataFrame,
+    habit_name: str,
+    target_date: dt.date,
+    default_goal: Optional[float] = None,
 ) -> tuple[float, Optional[float]]:
-    if tracking.empty or not {"DATE", "HABIT_NAME"}.issubset(tracking.columns):
-        return 0.0, None
+    if tracking.empty:
+        return 0.0, default_goal
+    if not {"DATE", "HABIT_NAME"}.issubset(tracking.columns):
+        return 0.0, default_goal
 
     dates = pd.to_datetime(tracking["DATE"], errors="coerce")
     rows = tracking.loc[
         (tracking["HABIT_NAME"] == habit_name) & (dates.dt.date == target_date)
     ]
     if rows.empty:
-        return 0.0, None
+        return 0.0, default_goal
 
     counts = (
         pd.to_numeric(rows["COUNT_COMPLETED"], errors="coerce").fillna(0)
@@ -69,7 +74,8 @@ def daily_progress(
         if "DAILY_GOAL" in rows
         else pd.Series(dtype=float)
     )
-    return float(counts.sum()), float(goals.iloc[-1]) if not goals.empty else None
+    goal = float(goals.iloc[-1]) if not goals.empty else default_goal
+    return float(counts.sum()), goal
 
 
 def _dates_for_habit(tracking: pd.DataFrame, habit_name: str) -> set[dt.date]:

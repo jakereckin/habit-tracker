@@ -36,11 +36,13 @@ Google; new account records use an empty password field for compatibility with
 the existing database schema.
 
 For numeric habits, set a target for the selected date on the Daily check-in
-page, then log amounts as you make progress. Existing databases need this
-one-time migration before using numeric goals:
+page, then log amounts as you make progress. The daily target entered when
+creating the habit is the default for each day, and can be overridden on the
+Daily check-in page. Existing databases need these one-time migrations:
 
 ```sql
 ALTER TABLE daily_tracking ADD COLUMN DAILY_GOAL REAL;
+ALTER TABLE habit_list ADD COLUMN DEFAULT_DAILY_GOAL REAL;
 ```
 
 Progress is accumulated in `COUNT_COMPLETED`; numeric check-ins count as

@@ -36,11 +36,25 @@ if active_habits.empty:
         icon=":material/add_circle:",
     )
 else:
-    active_names = active_habits["HABIT_NAME"].tolist()
-    completed_count = len(completed.intersection(active_names))
+    progress_units = 0.0
+    for habit in active_habits.itertuples(index=False):
+        if str(habit.GOAL_TYPE).upper() == "NUMERIC":
+            amount_done, daily_goal = daily_progress(
+                tracking,
+                habit.HABIT_NAME,
+                target_date,
+                habit.DEFAULT_DAILY_GOAL,
+            )
+            if daily_goal is not None and daily_goal > 0:
+                progress_units += min(amount_done / daily_goal, 1.0)
+        elif habit.HABIT_NAME in completed:
+            progress_units += 1
     st.progress(
-        completed_count / len(active_habits),
-        text=f"{completed_count} of {len(active_habits)} habits complete",
+        progress_units / len(active_habits),
+        text=(
+            f"{progress_units:g} of {len(active_habits)} daily goals "
+            "complete (numeric progress included)"
+        ),
     )
     for index, habit in enumerate(active_habits.itertuples(index=False)):
         is_complete = habit.HABIT_NAME in completed
@@ -57,7 +71,10 @@ else:
                     st.caption(description)
             if str(habit.GOAL_TYPE).upper() == "NUMERIC":
                 amount_done, saved_goal = daily_progress(
-                    tracking, habit.HABIT_NAME, target_date
+                    tracking,
+                    habit.HABIT_NAME,
+                    target_date,
+                    habit.DEFAULT_DAILY_GOAL,
                 )
                 with columns[1]:
                     if saved_goal is None:
@@ -78,7 +95,7 @@ else:
                         daily_goal = st.number_input(
                             "Today's target",
                             min_value=0.01,
-                            value=saved_goal if saved_goal is not None else 1.0,
+                            value=float(saved_goal or 1.0),
                             step=1.0,
                             format="%.2f",
                             key=f"numeric_goal_{index}_{target_date}",

@@ -12,6 +12,7 @@ st.caption("Create a routine that fits your day. You can pause habits any time."
 
 with st.container(border=True):
     st.subheader("Create a habit")
+    goal_type = st.selectbox("Goal type", ["BINARY", "NUMERIC"])
     with st.form("add_habit_form", clear_on_submit=True):
         habit_name = st.text_input("Habit name", max_chars=80)
         habit_description = st.text_area(
@@ -21,11 +22,20 @@ with st.container(border=True):
         with form_columns[0]:
             start_date = st.date_input("Start date")
         with form_columns[1]:
-            goal_type = st.selectbox("Goal type", ["BINARY", "NUMERIC"])
-        with form_columns[2]:
             difficulty = st.select_slider(
                 "Difficulty", options=[1, 2, 3, 4, 5], value=3
             )
+        if goal_type == "NUMERIC":
+            daily_goal = st.number_input(
+                "Daily goal",
+                min_value=0.01,
+                value=1.0,
+                step=1.0,
+                format="%.2f",
+                help="Set the amount you want to complete each day.",
+            )
+        else:
+            daily_goal = None
         submitted = st.form_submit_button(
             "Add habit", type="primary", icon=":material/add:"
         )
@@ -48,6 +58,7 @@ with st.container(border=True):
                 start_date,
                 goal_type,
                 difficulty,
+                daily_goal,
             )
             st.success(f"{cleaned_name} added to your routine.")
             st.rerun()

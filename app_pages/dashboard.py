@@ -73,7 +73,10 @@ else:
             with habit_columns[2]:
                 if str(habit.GOAL_TYPE).upper() == "NUMERIC":
                     amount_done, daily_goal = daily_progress(
-                        tracking, habit.HABIT_NAME, today
+                        tracking,
+                        habit.HABIT_NAME,
+                        today,
+                        habit.DEFAULT_DAILY_GOAL,
                     )
                     if daily_goal is None:
                         st.caption("No target")

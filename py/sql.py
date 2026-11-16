@@ -28,7 +28,8 @@ def get_habits():
            START_DATE,
            ACTIVE,
            GOAL_TYPE,
-           DIFFICULTY
+           DIFFICULTY,
+           DEFAULT_DAILY_GOAL
       FROM habit_list
      WHERE LOWER(EMAIL) = LOWER(?)
      ORDER BY HABIT_NAME
@@ -38,8 +39,11 @@ def get_habits():
 
 def insert_habits():
     sql = """
-    INSERT INTO habit_list (EMAIL, HABIT_NAME, HABIT_DESCRIPTION, START_DATE, ACTIVE, GOAL_TYPE, DIFFICULTY)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO habit_list (
+        EMAIL, HABIT_NAME, HABIT_DESCRIPTION, START_DATE, ACTIVE,
+        GOAL_TYPE, DIFFICULTY, DEFAULT_DAILY_GOAL
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """
     return sql
 
@@ -145,7 +149,8 @@ def get_tracking():
            tracking.TIME,
            tracking.COUNT_COMPLETED,
            tracking.DAILY_GOAL,
-           habits.GOAL_TYPE
+           habits.GOAL_TYPE,
+           habits.DEFAULT_DAILY_GOAL
       FROM daily_tracking AS tracking
       LEFT JOIN habit_list AS habits
         ON LOWER(habits.EMAIL) = LOWER(tracking.EMAIL)
