@@ -20,7 +20,8 @@ class HabitSqlTests(unittest.TestCase):
                 START_DATE TEXT,
                 ACTIVE TEXT,
                 GOAL_TYPE TEXT,
-                DIFFICULTY INTEGER
+                DIFFICULTY INTEGER,
+                DEFAULT_DAILY_GOAL REAL
             );
             CREATE TABLE daily_tracking (
                 EMAIL TEXT,
@@ -59,6 +60,7 @@ class HabitSqlTests(unittest.TestCase):
             "Y",
             "BINARY",
             3,
+            None,
         )
         self.connection.execute(sql.insert_habits(), habit)
         self.connection.execute(
@@ -104,7 +106,7 @@ class HabitSqlTests(unittest.TestCase):
 
     def test_numeric_goal_is_saved_and_progress_accumulates(self):
         self.connection.execute(
-            "INSERT INTO habit_list VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO habit_list VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 "person@example.com",
                 "Drink water",
@@ -113,6 +115,7 @@ class HabitSqlTests(unittest.TestCase):
                 "Y",
                 "NUMERIC",
                 3,
+                100,
             ),
         )
         self.connection.execute(

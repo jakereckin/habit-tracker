@@ -78,6 +78,20 @@ class HabitLogicTests(unittest.TestCase):
             (25.0, 100.0),
         )
 
+    def test_numeric_default_goal_applies_before_daily_override(self):
+        tracking = pd.DataFrame(
+            columns=["HABIT_NAME", "DATE", "COUNT_COMPLETED", "DAILY_GOAL"]
+        )
+        self.assertEqual(
+            daily_progress(
+                tracking,
+                "Pages",
+                dt.date(2026, 11, 13),
+                default_goal=100,
+            ),
+            (0.0, 100),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
