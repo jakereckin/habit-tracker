@@ -41,15 +41,14 @@ st.subheader("Check-ins over the last 30 days")
 if tracking.empty:
     st.info("Your progress chart will appear after your first check-in.")
 else:
-    parsed_dates = pd.to_datetime(tracking["DATE"], errors="coerce")
-    daily_counts = (
-        tracking.assign(DATE_PARSED=parsed_dates)
-        .dropna(subset=["DATE_PARSED"])
-        .groupby("DATE_PARSED")["HABIT_NAME"]
-        .nunique()
-    )
     chart_dates = pd.date_range(end=pd.Timestamp(today), periods=30, freq="D")
-    recent_counts = daily_counts.reindex(chart_dates, fill_value=0)
+    recent_counts = pd.Series(
+        [
+            len(completed_habits_for_date(tracking, chart_date.date()))
+            for chart_date in chart_dates
+        ],
+        index=chart_dates,
+    )
     recent_counts.index.name = "Date"
     st.bar_chart(recent_counts.rename("Completed habits"))
 

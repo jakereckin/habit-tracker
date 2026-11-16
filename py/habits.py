@@ -102,3 +102,71 @@ def set_habit_completion(
                 parameters=(email, habit_name, date_value),
             )
         conn.commit()
+
+
+def save_daily_goal(
+    email: str,
+    habit_name: str,
+    target_date: dt.date,
+    daily_goal: float,
+) -> None:
+    if daily_goal <= 0:
+        raise ValueError("A daily goal must be greater than zero.")
+
+    date_value = target_date.strftime("%m/%d/%Y")
+    now = local_now().strftime("%H:%M")
+    with sqlitecloud.connect(get_db_connection()) as conn:
+        conn.execute(
+            sql.update_daily_goal(),
+            (daily_goal, email, habit_name, date_value),
+        )
+        conn.execute(
+            sql.insert_daily_goal(),
+            (
+                email,
+                habit_name,
+                date_value,
+                now,
+                daily_goal,
+                email,
+                habit_name,
+                date_value,
+            ),
+        )
+        conn.commit()
+
+
+def add_numeric_progress(
+    email: str,
+    habit_name: str,
+    target_date: dt.date,
+    amount: float,
+    daily_goal: float,
+) -> None:
+    if amount <= 0:
+        raise ValueError("The amount to add must be greater than zero.")
+    if daily_goal <= 0:
+        raise ValueError("A daily goal must be greater than zero.")
+
+    date_value = target_date.strftime("%m/%d/%Y")
+    now = local_now().strftime("%H:%M")
+    with sqlitecloud.connect(get_db_connection()) as conn:
+        conn.execute(
+            sql.add_numeric_progress(),
+            (amount, daily_goal, now, email, habit_name, date_value),
+        )
+        conn.execute(
+            sql.insert_numeric_progress(),
+            (
+                email,
+                habit_name,
+                date_value,
+                now,
+                amount,
+                daily_goal,
+                email,
+                habit_name,
+                date_value,
+            ),
+        )
+        conn.commit()

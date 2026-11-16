@@ -35,6 +35,17 @@ legacy `users` table are cleared for an account when it first signs in with
 Google; new account records use an empty password field for compatibility with
 the existing database schema.
 
+For numeric habits, set a target for the selected date on the Daily check-in
+page, then log amounts as you make progress. Existing databases need this
+one-time migration before using numeric goals:
+
+```sql
+ALTER TABLE daily_tracking ADD COLUMN DAILY_GOAL REAL;
+```
+
+Progress is accumulated in `COUNT_COMPLETED`; numeric check-ins count as
+complete for streaks and daily totals when the amount reaches `DAILY_GOAL`.
+
 Install dependencies and start Streamlit:
 
 ```powershell

@@ -2,8 +2,14 @@ import pandas as pd
 import streamlit as st
 
 from py.auth import require_user
-from py.habit_logic import completed_habits_for_date, local_today
-from py.habits import get_habits, get_tracking, set_habit_completion
+from py.habit_logic import completed_habits_for_date, daily_progress, local_today
+from py.habits import (
+    add_numeric_progress,
+    get_habits,
+    get_tracking,
+    save_daily_goal,
+    set_habit_completion,
+)
 
 
 email = require_user()
@@ -49,20 +55,77 @@ else:
                 )
                 if description:
                     st.caption(description)
-            with columns[1]:
-                st.caption("Completed" if is_complete else "One step at a time")
-            with columns[2]:
-                if st.button(
-                    "Undo" if is_complete else "Complete",
-                    key=f"checkin_{index}",
-                    type="secondary" if is_complete else "primary",
-                    icon=(
-                        ":material/check:"
-                        if is_complete
-                        else ":material/add_task:"
-                    ),
-                ):
-                    set_habit_completion(
-                        email, habit.HABIT_NAME, target_date, not is_complete
+            if str(habit.GOAL_TYPE).upper() == "NUMERIC":
+                amount_done, saved_goal = daily_progress(
+                    tracking, habit.HABIT_NAME, target_date
+                )
+                with columns[1]:
+                    if saved_goal is None:
+                        st.caption("Set a target for today")
+                    else:
+                        ratio = min(amount_done / saved_goal, 1.0)
+                        st.progress(
+                            ratio,
+                            text=(
+                                f"{amount_done:g}/{saved_goal:g} done "
+                                f"({ratio:.0%})"
+                            ),
+                        )
+
+                with st.form(f"numeric_checkin_{index}_{target_date}"):
+                    goal_column, amount_column = st.columns(2)
+                    with goal_column:
+                        daily_goal = st.number_input(
+                            "Today's target",
+                            min_value=0.01,
+                            value=saved_goal if saved_goal is not None else 1.0,
+                            step=1.0,
+                            format="%.2f",
+                            key=f"numeric_goal_{index}_{target_date}",
+                        )
+                    with amount_column:
+                        amount = st.number_input(
+                            "Add progress",
+                            min_value=0.01,
+                            value=1.0,
+                            step=1.0,
+                            format="%.2f",
+                            key=f"numeric_amount_{index}_{target_date}",
+                        )
+                    save_goal = st.form_submit_button("Save target")
+                    add_amount = st.form_submit_button(
+                        "Add amount", type="primary"
+                    )
+
+                if save_goal:
+                    save_daily_goal(
+                        email, habit.HABIT_NAME, target_date, daily_goal
                     )
                     st.rerun()
+                if add_amount:
+                    add_numeric_progress(
+                        email,
+                        habit.HABIT_NAME,
+                        target_date,
+                        amount,
+                        daily_goal,
+                    )
+                    st.rerun()
+            else:
+                with columns[1]:
+                    st.caption("Completed" if is_complete else "One step at a time")
+                with columns[2]:
+                    if st.button(
+                        "Undo" if is_complete else "Complete",
+                        key=f"checkin_{index}",
+                        type="secondary" if is_complete else "primary",
+                        icon=(
+                            ":material/check:"
+                            if is_complete
+                            else ":material/add_task:"
+                        ),
+                    ):
+                        set_habit_completion(
+                            email, habit.HABIT_NAME, target_date, not is_complete
+                        )
+                        st.rerun()

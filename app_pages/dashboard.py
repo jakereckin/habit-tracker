@@ -1,3 +1,5 @@
+import datetime as dt
+
 import pandas as pd
 import streamlit as st
 
@@ -5,6 +7,7 @@ from py.auth import require_user
 from py.habit_logic import (
     completed_habits_for_date,
     current_streak,
+    daily_progress,
     local_now,
     local_today,
 )
@@ -68,7 +71,22 @@ else:
                     f"{current_streak(tracking, habit.HABIT_NAME, today)}-day streak"
                 )
             with habit_columns[2]:
-                st.markdown("**Done**" if habit.HABIT_NAME in completed else "Up next")
+                if str(habit.GOAL_TYPE).upper() == "NUMERIC":
+                    amount_done, daily_goal = daily_progress(
+                        tracking, habit.HABIT_NAME, today
+                    )
+                    if daily_goal is None:
+                        st.caption("No target")
+                    else:
+                        ratio = min(amount_done / daily_goal, 1.0)
+                        st.caption(
+                            f"{amount_done:g}/{daily_goal:g} "
+                            f"({ratio:.0%})"
+                        )
+                else:
+                    st.markdown(
+                        "**Done**" if habit.HABIT_NAME in completed else "Up next"
+                    )
 
     st.page_link(
         "app_pages/check_in.py",
@@ -80,10 +98,16 @@ st.subheader("A little progress adds up")
 if tracking.empty:
     st.write("Your check-ins and streaks will show here as you build your routine.")
 else:
-    tracking_dates = pd.to_datetime(tracking["DATE"], errors="coerce").dropna()
-    if not tracking_dates.empty:
+    tracking_dates = pd.to_datetime(tracking["DATE"], errors="coerce")
+    if tracking_dates.notna().any():
         recent_start = today - dt.timedelta(days=6)
-        recent_count = int((tracking_dates.dt.date >= recent_start).sum())
+        has_progress = (
+            pd.to_numeric(tracking["COUNT_COMPLETED"], errors="coerce").fillna(0)
+            > 0
+        )
+        recent_count = int(
+            ((tracking_dates.dt.date >= recent_start) & has_progress).sum()
+        )
         st.caption(
             f"You logged {recent_count} check-in"
             f"{'' if recent_count == 1 else 's'} in the last 7 days."
