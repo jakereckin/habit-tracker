@@ -21,7 +21,16 @@ emails = ["authorized-person@example.com"]
 
 [habits_connection]
 DB_CONNECTION = "your-sqlite-cloud-connection-string"
+
+[gemini]
+api_key = "your-gemini-api-key"
 ```
+
+Create a Gemini API key in [Google AI Studio](https://aistudio.google.com/apikey).
+For a published Streamlit Community Cloud app, also add the `[gemini]` section
+to the app's **Settings > Secrets**; local secrets are not published with the app.
+The Today page sends active habit names, descriptions, and today's progress to
+Gemini only when you request suggestions. The user's email is not sent.
 
 In Google Cloud Console, create a Web application OAuth client and add
 `http://localhost:8501/oauth2callback` as an authorized redirect URI. For a

@@ -4,6 +4,10 @@ import pandas as pd
 import streamlit as st
 
 from py.auth import require_user
+from py.daily_suggestions import (
+    DailySuggestionError,
+    generate_daily_suggestions,
+)
 from py.habit_logic import (
     completed_habits_for_date,
     current_streak,
@@ -49,6 +53,64 @@ best_current_streak = max(
 metric_columns[2].metric("Current best streak", f"{best_current_streak} days")
 
 st.progress(completion_rate, text="Your daily progress")
+
+st.subheader("Ideas for today")
+gemini_config = st.secrets.get("gemini", {})
+gemini_api_key = gemini_config.get("api_key")
+if not gemini_api_key:
+    st.caption(
+        "Add a Gemini API key to your app secrets to get personalized suggestions."
+    )
+elif active_habits.empty:
+    st.caption("Add a habit to get suggestions for your day.")
+else:
+    suggestion_context = []
+    for habit in active_habits.itertuples(index=False):
+        habit_name = str(habit.HABIT_NAME)
+        item = {
+            "habit": habit_name,
+            "status": "complete" if habit_name in completed else "not complete",
+        }
+        description = (
+            ""
+            if pd.isna(habit.HABIT_DESCRIPTION)
+            else str(habit.HABIT_DESCRIPTION).strip()
+        )
+        if description:
+            item["description"] = description
+
+        if str(habit.GOAL_TYPE).upper() == "NUMERIC":
+            amount_done, daily_goal = daily_progress(
+                tracking,
+                habit_name,
+                today,
+                habit.DEFAULT_DAILY_GOAL,
+            )
+            item["progress"] = (
+                f"{amount_done:g} of {daily_goal:g}"
+                if daily_goal is not None
+                else f"{amount_done:g} logged; no target set"
+            )
+        suggestion_context.append(item)
+
+    if st.button("Suggest a focus for today", key="today_suggestions"):
+        with st.spinner("Thinking of a few practical ideas..."):
+            try:
+                suggestions = generate_daily_suggestions(
+                    gemini_api_key,
+                    suggestion_context,
+                )
+            except DailySuggestionError as exc:
+                st.error(str(exc))
+            else:
+                st.session_state["today_suggestions"] = suggestions
+                st.session_state["today_suggestions_date"] = today.isoformat()
+
+    if st.session_state.get("today_suggestions_date") == today.isoformat():
+        suggestions = st.session_state.get("today_suggestions")
+        if suggestions:
+            st.markdown(suggestions)
+
 st.subheader("Today's habits")
 
 if active_habits.empty:

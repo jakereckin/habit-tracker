@@ -1,3 +1,10 @@
+import os
+import sys
+
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+if APP_ROOT not in sys.path:
+    sys.path.insert(0, APP_ROOT)
+
 import streamlit as st
 
 from py.auth import require_user
@@ -8,6 +15,9 @@ st.set_page_config(
     page_icon=":material/check_circle:",
     layout="wide",
 )
+
+user = getattr(st, "user", None)
+is_logged_in = bool(getattr(user, "is_logged_in", False)) if user is not None else False
 
 page = st.navigation(
     [
@@ -33,7 +43,7 @@ page = st.navigation(
             icon=":material/monitoring:",
         ),
     ],
-    position="top" if st.user.is_logged_in else "hidden",
+    position="top" if is_logged_in else "hidden",
 )
 require_user()
 page.run()

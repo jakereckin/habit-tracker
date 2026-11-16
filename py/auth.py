@@ -18,12 +18,22 @@ def _missing_google_settings() -> list[str]:
 
 
 def require_user() -> str:
-    if not st.user.is_logged_in:
+    user = getattr(st, "user", None)
+    is_logged_in = bool(getattr(user, "is_logged_in", False)) if user is not None else False
+
+    if not is_logged_in:
         st.title("Build a routine that feels like yours")
         st.write(
             "Keep your habits, daily check-ins, and progress in one calm place."
         )
         st.caption("Sign in with an authorized Google account to continue.")
+
+        if not hasattr(st, "login") or not hasattr(st, "logout"):
+            st.error(
+                "Google sign-in requires the Streamlit auth extra. "
+                "Install streamlit[auth] and configure .streamlit/secrets.toml."
+            )
+            st.stop()
 
         missing_settings = _missing_google_settings()
         if missing_settings:
