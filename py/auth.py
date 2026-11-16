@@ -3,7 +3,6 @@ import streamlit as st
 
 def _missing_google_settings() -> list[str]:
     auth_settings = st.secrets.get("auth", {})
-    google_settings = auth_settings.get("google", {})
     required_settings = {
         "auth.redirect_uri": auth_settings.get("redirect_uri"),
         "auth.cookie_secret": auth_settings.get("cookie_secret"),
@@ -44,7 +43,7 @@ def require_user() -> str:
     if not isinstance(configured_emails, list):
         st.error("The [access] emails setting must be a list.")
         st.stop()
-    
+
     allowed_emails = {
         allowed.strip().lower()
         for allowed in configured_emails
