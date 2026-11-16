@@ -21,7 +21,10 @@ class HabitSqlTests(unittest.TestCase):
                 ACTIVE TEXT,
                 GOAL_TYPE TEXT,
                 DIFFICULTY INTEGER,
-                DEFAULT_DAILY_GOAL REAL
+                DEFAULT_DAILY_GOAL REAL,
+                GOAL_FREQUENCY TEXT,
+                SCHEDULED_DAYS TEXT,
+                PERIOD_TARGET INTEGER
             );
             CREATE TABLE daily_tracking (
                 EMAIL TEXT,
@@ -30,6 +33,12 @@ class HabitSqlTests(unittest.TestCase):
                 TIME TEXT,
                 COUNT_COMPLETED REAL,
                 DAILY_GOAL REAL
+            );
+            CREATE TABLE habit_skip_days (
+                EMAIL TEXT,
+                HABIT_NAME TEXT,
+                DATE TEXT,
+                PRIMARY KEY (EMAIL, HABIT_NAME, DATE)
             );
             """
         )
@@ -61,6 +70,9 @@ class HabitSqlTests(unittest.TestCase):
             "BINARY",
             3,
             None,
+            "WEEKLY",
+            "0,1,2,3,4",
+            None,
         )
         self.connection.execute(sql.insert_habits(), habit)
         self.connection.execute(
@@ -85,6 +97,7 @@ class HabitSqlTests(unittest.TestCase):
         ).fetchall()
         self.assertEqual(len(habits), 1)
         self.assertEqual(len(tracking), 1)
+        self.assertEqual(habits[0][8:], ("WEEKLY", "0,1,2,3,4", None))
 
     def test_daily_check_in_insert_does_not_duplicate(self):
         parameters = (
@@ -106,7 +119,13 @@ class HabitSqlTests(unittest.TestCase):
 
     def test_numeric_goal_is_saved_and_progress_accumulates(self):
         self.connection.execute(
-            "INSERT INTO habit_list VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            """
+            INSERT INTO habit_list (
+                EMAIL, HABIT_NAME, HABIT_DESCRIPTION, START_DATE, ACTIVE,
+                GOAL_TYPE, DIFFICULTY, DEFAULT_DAILY_GOAL,
+                GOAL_FREQUENCY, SCHEDULED_DAYS, PERIOD_TARGET
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
             (
                 "person@example.com",
                 "Drink water",
@@ -116,6 +135,9 @@ class HabitSqlTests(unittest.TestCase):
                 "NUMERIC",
                 3,
                 100,
+                "DAILY",
+                None,
+                None,
             ),
         )
         self.connection.execute(
@@ -171,3 +193,63 @@ class HabitSqlTests(unittest.TestCase):
             """
         ).fetchone()
         self.assertEqual(progress, (35.0, 100.0))
+
+    def test_skip_day_is_scoped_and_can_be_undone(self):
+        parameters = (
+            "person@example.com",
+            "Shower",
+            "11/16/2026",
+            "person@example.com",
+            "Shower",
+            "11/16/2026",
+        )
+        self.connection.execute(sql.insert_skip_day(), parameters)
+        self.connection.execute(sql.insert_skip_day(), parameters)
+        skipped = self.connection.execute(
+            sql.get_skip_days(), ("person@example.com",)
+        ).fetchall()
+        self.assertEqual(skipped, [("person@example.com", "Shower", "11/16/2026")])
+
+        self.connection.execute(
+            sql.remove_skip_day(),
+            ("person@example.com", "Shower", "11/16/2026"),
+        )
+        skipped = self.connection.execute(
+            sql.get_skip_days(), ("person@example.com",)
+        ).fetchall()
+        self.assertEqual(skipped, [])
+
+    def test_weekly_cadence_update_replaces_days_and_clears_month_target(self):
+        self.connection.execute(
+            """
+            INSERT INTO habit_list (
+                EMAIL, HABIT_NAME, GOAL_FREQUENCY, SCHEDULED_DAYS,
+                PERIOD_TARGET
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                "person@example.com",
+                "Shower",
+                "MONTHLY",
+                None,
+                10,
+            ),
+        )
+        self.connection.execute(
+            sql.update_habit_cadence(),
+            (
+                "WEEKLY",
+                "0,1,2,3,4",
+                None,
+                "person@example.com",
+                "Shower",
+            ),
+        )
+        cadence = self.connection.execute(
+            """
+            SELECT GOAL_FREQUENCY, SCHEDULED_DAYS, PERIOD_TARGET
+              FROM habit_list
+             WHERE HABIT_NAME = 'Shower'
+            """
+        ).fetchone()
+        self.assertEqual(cadence, ("WEEKLY", "0,1,2,3,4", None))

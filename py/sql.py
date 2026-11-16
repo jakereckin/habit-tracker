@@ -29,7 +29,10 @@ def get_habits():
            ACTIVE,
            GOAL_TYPE,
            DIFFICULTY,
-           DEFAULT_DAILY_GOAL
+           DEFAULT_DAILY_GOAL,
+           GOAL_FREQUENCY,
+           SCHEDULED_DAYS,
+           PERIOD_TARGET
       FROM habit_list
      WHERE LOWER(EMAIL) = LOWER(?)
      ORDER BY HABIT_NAME
@@ -41,9 +44,10 @@ def insert_habits():
     sql = """
     INSERT INTO habit_list (
         EMAIL, HABIT_NAME, HABIT_DESCRIPTION, START_DATE, ACTIVE,
-        GOAL_TYPE, DIFFICULTY, DEFAULT_DAILY_GOAL
+        GOAL_TYPE, DIFFICULTY, DEFAULT_DAILY_GOAL,
+        GOAL_FREQUENCY, SCHEDULED_DAYS, PERIOD_TARGET
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     return sql
 
@@ -52,6 +56,18 @@ def set_habit_active():
     sql = """
     UPDATE habit_list
        SET ACTIVE = ?
+     WHERE LOWER(EMAIL) = LOWER(?)
+       AND HABIT_NAME = ?
+    """
+    return sql
+
+
+def update_habit_cadence():
+    sql = """
+    UPDATE habit_list
+       SET GOAL_FREQUENCY = ?,
+           SCHEDULED_DAYS = ?,
+           PERIOD_TARGET = ?
      WHERE LOWER(EMAIL) = LOWER(?)
        AND HABIT_NAME = ?
     """
@@ -150,12 +166,50 @@ def get_tracking():
            tracking.COUNT_COMPLETED,
            tracking.DAILY_GOAL,
            habits.GOAL_TYPE,
-           habits.DEFAULT_DAILY_GOAL
+           habits.DEFAULT_DAILY_GOAL,
+           habits.GOAL_FREQUENCY,
+           habits.SCHEDULED_DAYS,
+           habits.PERIOD_TARGET
       FROM daily_tracking AS tracking
       LEFT JOIN habit_list AS habits
         ON LOWER(habits.EMAIL) = LOWER(tracking.EMAIL)
        AND habits.HABIT_NAME = tracking.HABIT_NAME
      WHERE LOWER(tracking.EMAIL) = LOWER(?)
      ORDER BY tracking.DATE
+    """
+    return sql
+
+
+def get_skip_days():
+    sql = """
+    SELECT EMAIL, HABIT_NAME, DATE
+      FROM habit_skip_days
+     WHERE LOWER(EMAIL) = LOWER(?)
+     ORDER BY DATE
+    """
+    return sql
+
+
+def insert_skip_day():
+    sql = """
+    INSERT INTO habit_skip_days (EMAIL, HABIT_NAME, DATE)
+    SELECT ?, ?, ?
+     WHERE NOT EXISTS (
+           SELECT 1
+             FROM habit_skip_days
+            WHERE LOWER(EMAIL) = LOWER(?)
+              AND HABIT_NAME = ?
+              AND DATE = ?
+     )
+    """
+    return sql
+
+
+def remove_skip_day():
+    sql = """
+    DELETE FROM habit_skip_days
+     WHERE LOWER(EMAIL) = LOWER(?)
+       AND HABIT_NAME = ?
+       AND DATE = ?
     """
     return sql

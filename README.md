@@ -45,9 +45,30 @@ Google; new account records use an empty password field for compatibility with
 the existing database schema.
 
 For numeric habits, set a target for the selected date on the Daily check-in
-page, then log amounts as you make progress. The daily target entered when
-creating the habit is the default for each day, and can be overridden on the
-Daily check-in page. Existing databases need these one-time migrations:
+page, then log amounts as you make progress. The target entered when creating
+the habit is the default for each scheduled check-in and can be overridden on
+the Daily check-in page. Daily habits are due every day. Weekly habits let you
+select weekdays (the selected days define the weekly target, with weeks starting
+Monday). Monthly habits use a completion count that can be reached on any dates
+in the month. Numeric targets apply to each scheduled check-in. You can excuse
+a daily or weekly habit on a specific date and undo that skip later.
+
+Existing databases need these one-time migrations before deploying the updated
+app:
+
+```sql
+ALTER TABLE habit_list ADD COLUMN GOAL_FREQUENCY TEXT NOT NULL DEFAULT 'DAILY';
+ALTER TABLE habit_list ADD COLUMN SCHEDULED_DAYS TEXT;
+ALTER TABLE habit_list ADD COLUMN PERIOD_TARGET INTEGER;
+CREATE TABLE IF NOT EXISTS habit_skip_days (
+    EMAIL TEXT NOT NULL,
+    HABIT_NAME TEXT NOT NULL,
+    DATE TEXT NOT NULL,
+    PRIMARY KEY (EMAIL, HABIT_NAME, DATE)
+);
+```
+
+Existing numeric-goal databases also need the earlier numeric-target migrations:
 
 ```sql
 ALTER TABLE daily_tracking ADD COLUMN DAILY_GOAL REAL;
@@ -55,7 +76,7 @@ ALTER TABLE habit_list ADD COLUMN DEFAULT_DAILY_GOAL REAL;
 ```
 
 Progress is accumulated in `COUNT_COMPLETED`; numeric check-ins count as
-complete for streaks and daily totals when the amount reaches `DAILY_GOAL`.
+complete for their cadence goal when the amount reaches `DAILY_GOAL`.
 
 Install dependencies and start Streamlit:
 

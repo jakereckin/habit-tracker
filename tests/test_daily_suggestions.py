@@ -26,6 +26,10 @@ class DailySuggestionTests(unittest.TestCase):
         call = client.models.generate_content.call_args.kwargs
         self.assertEqual(call["model"], MODEL)
         self.assertIn(str(habits), call["contents"])
+        self.assertIn(
+            "do not suggest a habit marked skipped or not scheduled",
+            call["contents"],
+        )
 
     @patch("py.daily_suggestions.genai.Client")
     def test_rejects_an_empty_model_response(self, client_class):

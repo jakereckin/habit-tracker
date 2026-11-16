@@ -43,6 +43,41 @@ def get_tracking(email: str):
     )
 
 
+def get_skip_days(email: str):
+    return data_source.run_query(
+        sql=sql.get_skip_days(),
+        connection=get_db_connection(),
+        params=[email],
+    )
+
+
+def _normalize_cadence(
+    frequency: str,
+    scheduled_days: Optional[list[int]],
+    period_target: Optional[int],
+) -> tuple[str, Optional[str], Optional[int]]:
+    normalized_frequency = frequency.upper()
+    if normalized_frequency not in {"DAILY", "WEEKLY", "MONTHLY"}:
+        raise ValueError("Frequency must be daily, weekly, or monthly.")
+    selected_days = sorted(set(scheduled_days or []))
+    if normalized_frequency == "WEEKLY" and not selected_days:
+        raise ValueError("Weekly habits require at least one scheduled weekday.")
+    if any(day < 0 or day > 6 for day in selected_days):
+        raise ValueError("Scheduled weekdays must be between 0 and 6.")
+    if normalized_frequency == "MONTHLY" and (
+        period_target is None or period_target < 1
+    ):
+        raise ValueError("Monthly habits require a positive completion target.")
+
+    return (
+        normalized_frequency,
+        ",".join(str(day) for day in selected_days)
+        if normalized_frequency == "WEEKLY"
+        else None,
+        period_target if normalized_frequency == "MONTHLY" else None,
+    )
+
+
 def create_habit(
     email: str,
     name: str,
@@ -51,9 +86,17 @@ def create_habit(
     goal_type: str,
     difficulty: int,
     daily_goal: Optional[float] = None,
+    frequency: str = "DAILY",
+    scheduled_days: Optional[list[int]] = None,
+    period_target: Optional[int] = None,
 ) -> None:
     if goal_type == "NUMERIC" and (daily_goal is None or daily_goal <= 0):
         raise ValueError("Numeric habits require a daily goal greater than zero.")
+    (
+        normalized_frequency,
+        scheduled_days_value,
+        normalized_period_target,
+    ) = _normalize_cadence(frequency, scheduled_days, period_target)
 
     with sqlitecloud.connect(get_db_connection()) as conn:
         conn.execute(
@@ -67,6 +110,9 @@ def create_habit(
                 goal_type,
                 difficulty,
                 daily_goal,
+                normalized_frequency,
+                scheduled_days_value,
+                normalized_period_target,
             ),
         )
         conn.commit()
@@ -78,6 +124,51 @@ def set_habit_active(email: str, habit_name: str, active: bool) -> None:
             sql=sql.set_habit_active(),
             parameters=("Y" if active else "N", email, habit_name),
         )
+        conn.commit()
+
+
+def update_habit_cadence(
+    email: str,
+    habit_name: str,
+    frequency: str,
+    scheduled_days: Optional[list[int]] = None,
+    period_target: Optional[int] = None,
+) -> None:
+    cadence = _normalize_cadence(
+        frequency,
+        scheduled_days,
+        period_target,
+    )
+    with sqlitecloud.connect(get_db_connection()) as conn:
+        conn.execute(
+            sql.update_habit_cadence(),
+            (*cadence, email, habit_name),
+        )
+        conn.commit()
+
+
+def set_habit_skipped(
+    email: str, habit_name: str, target_date: dt.date, skipped: bool
+) -> None:
+    date_value = target_date.strftime("%m/%d/%Y")
+    with sqlitecloud.connect(get_db_connection()) as conn:
+        if skipped:
+            conn.execute(
+                sql.insert_skip_day(),
+                (
+                    email,
+                    habit_name,
+                    date_value,
+                    email,
+                    habit_name,
+                    date_value,
+                ),
+            )
+        else:
+            conn.execute(
+                sql.remove_skip_day(),
+                (email, habit_name, date_value),
+            )
         conn.commit()
 
 

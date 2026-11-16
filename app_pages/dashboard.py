@@ -12,10 +12,14 @@ from py.habit_logic import (
     completed_habits_for_date,
     current_streak,
     daily_progress,
+    habit_period_progress,
+    is_habit_due,
     local_now,
     local_today,
+    skipped_dates_for_habit,
+    skipped_habits_for_date,
 )
-from py.habits import get_habits, get_tracking
+from py.habits import get_habits, get_skip_days, get_tracking
 
 
 email = require_user()
@@ -23,13 +27,26 @@ email = require_user()
 today = local_today()
 habits = get_habits(email)
 tracking = get_tracking(email)
+skip_days = get_skip_days(email)
 active_habits = habits[habits["ACTIVE"].astype(str).str.upper() == "Y"]
-completed = completed_habits_for_date(tracking, today)
+skipped_today = skipped_habits_for_date(skip_days, today)
+completed = completed_habits_for_date(tracking, today, skipped_today)
+due_habits = [
+    habit
+    for habit in active_habits.itertuples(index=False)
+    if str(habit.GOAL_FREQUENCY).upper() != "MONTHLY"
+    and is_habit_due(
+        str(habit.GOAL_FREQUENCY),
+        habit.SCHEDULED_DAYS,
+        today,
+    )
+    and habit.HABIT_NAME not in skipped_today
+]
 completed_count = sum(
-    habit in completed for habit in active_habits["HABIT_NAME"].tolist()
+    habit.HABIT_NAME in completed for habit in due_habits
 )
-active_count = len(active_habits)
-completion_rate = completed_count / active_count if active_count else 0
+due_count = len(due_habits)
+completion_rate = completed_count / due_count if due_count else 0
 
 hour = local_now().hour
 greeting = "Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening"
@@ -40,19 +57,37 @@ st.caption(f"{today:%A, %B} {today.day}, {today.year}")
 
 metric_columns = st.columns(3)
 metric_columns[0].metric(
-    "Today's progress", f"{completed_count}/{active_count}", f"{completion_rate:.0%}"
+    "Today's due goals",
+    f"{completed_count}/{due_count}",
+    f"{completion_rate:.0%}",
 )
-metric_columns[1].metric("Active habits", active_count)
+metric_columns[1].metric("Active habits", len(active_habits))
+daily_habit_names = active_habits.loc[
+    active_habits["GOAL_FREQUENCY"].astype(str).str.upper() == "DAILY",
+    "HABIT_NAME",
+].tolist()
 best_current_streak = max(
     (
-        current_streak(tracking, habit, today)
-        for habit in active_habits["HABIT_NAME"].tolist()
+        current_streak(
+            tracking,
+            habit,
+            today,
+            skipped_dates_for_habit(skip_days, habit),
+        )
+        for habit in daily_habit_names
     ),
     default=0,
 )
-metric_columns[2].metric("Current best streak", f"{best_current_streak} days")
+metric_columns[2].metric("Best daily streak", f"{best_current_streak} days")
 
-st.progress(completion_rate, text="Your daily progress")
+st.progress(
+    completion_rate,
+    text=(
+        "Today's scheduled goal progress"
+        if due_count
+        else "No daily or weekly habits are due today"
+    ),
+)
 
 st.subheader("Ideas for today")
 gemini_config = st.secrets.get("gemini", {})
@@ -69,8 +104,36 @@ else:
         habit_name = str(habit.HABIT_NAME)
         item = {
             "habit": habit_name,
-            "status": "complete" if habit_name in completed else "not complete",
+            "status": (
+                "skipped"
+                if habit_name in skipped_today
+                else "complete"
+                if habit_name in completed
+                else "not complete"
+            ),
+            "cadence": str(habit.GOAL_FREQUENCY).lower(),
         }
+        done_count, target_count, period_label = habit_period_progress(
+            tracking,
+            habit_name,
+            today,
+            str(habit.GOAL_FREQUENCY),
+            habit.SCHEDULED_DAYS,
+            habit.PERIOD_TARGET,
+            skipped_dates_for_habit(skip_days, habit_name),
+        )
+        item["period_progress"] = (
+            f"{done_count} of {target_count} {period_label}"
+        )
+        if (
+            str(habit.GOAL_FREQUENCY).upper() == "WEEKLY"
+            and not is_habit_due(
+                str(habit.GOAL_FREQUENCY),
+                habit.SCHEDULED_DAYS,
+                today,
+            )
+        ):
+            item["status"] = "not scheduled today"
         description = (
             ""
             if pd.isna(habit.HABIT_DESCRIPTION)
@@ -122,6 +185,24 @@ if active_habits.empty:
     )
 else:
     for habit in active_habits.itertuples(index=False):
+        habit_name = str(habit.HABIT_NAME)
+        frequency = str(habit.GOAL_FREQUENCY).upper()
+        skipped_dates = skipped_dates_for_habit(skip_days, habit_name)
+        is_skipped = habit_name in skipped_today
+        is_due = frequency != "MONTHLY" and is_habit_due(
+            frequency,
+            habit.SCHEDULED_DAYS,
+            today,
+        )
+        done_count, target_count, period_label = habit_period_progress(
+            tracking,
+            habit_name,
+            today,
+            frequency,
+            habit.SCHEDULED_DAYS,
+            habit.PERIOD_TARGET,
+            skipped_dates,
+        )
         with st.container(border=True):
             habit_columns = st.columns([5, 1, 1], vertical_alignment="center")
             with habit_columns[0]:
@@ -129,11 +210,20 @@ else:
                 if pd.notna(habit.HABIT_DESCRIPTION) and habit.HABIT_DESCRIPTION:
                     st.caption(habit.HABIT_DESCRIPTION)
             with habit_columns[1]:
-                st.caption(
-                    f"{current_streak(tracking, habit.HABIT_NAME, today)}-day streak"
-                )
+                if frequency == "DAILY":
+                    st.caption(
+                        f"{current_streak(tracking, habit_name, today, skipped_dates)}-day streak"
+                    )
+                else:
+                    st.caption(
+                        f"{done_count}/{target_count} {period_label}"
+                    )
             with habit_columns[2]:
-                if str(habit.GOAL_TYPE).upper() == "NUMERIC":
+                if is_skipped:
+                    st.markdown("**Skipped**")
+                elif frequency == "WEEKLY" and not is_due:
+                    st.caption("Not scheduled")
+                elif str(habit.GOAL_TYPE).upper() == "NUMERIC":
                     amount_done, daily_goal = daily_progress(
                         tracking,
                         habit.HABIT_NAME,
@@ -150,7 +240,7 @@ else:
                         )
                 else:
                     st.markdown(
-                        "**Done**" if habit.HABIT_NAME in completed else "Up next"
+                        "**Done**" if habit_name in completed else "Up next"
                     )
 
     st.page_link(
@@ -165,13 +255,18 @@ if tracking.empty:
 else:
     tracking_dates = pd.to_datetime(tracking["DATE"], errors="coerce")
     if tracking_dates.notna().any():
-        recent_start = today - dt.timedelta(days=6)
-        has_progress = (
-            pd.to_numeric(tracking["COUNT_COMPLETED"], errors="coerce").fillna(0)
-            > 0
-        )
-        recent_count = int(
-            ((tracking_dates.dt.date >= recent_start) & has_progress).sum()
+        recent_count = sum(
+            len(
+                completed_habits_for_date(
+                    tracking,
+                    (today - dt.timedelta(days=offset)),
+                    skipped_habits_for_date(
+                        skip_days,
+                        today - dt.timedelta(days=offset),
+                    ),
+                )
+            )
+            for offset in range(7)
         )
         st.caption(
             f"You logged {recent_count} check-in"

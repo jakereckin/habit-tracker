@@ -8,6 +8,9 @@ from py.habit_logic import (
     completed_habits_for_date,
     current_streak,
     daily_progress,
+    habit_period_progress,
+    is_habit_due,
+    skipped_habits_for_date,
 )
 
 
@@ -90,6 +93,82 @@ class HabitLogicTests(unittest.TestCase):
                 default_goal=100,
             ),
             (0.0, 100),
+        )
+
+    def test_weekly_goal_is_due_only_on_selected_weekdays(self):
+        self.assertTrue(
+            is_habit_due(
+                "WEEKLY", "0,1,2,3,4", dt.date(2026, 11, 16)
+            )
+        )
+        self.assertFalse(
+            is_habit_due(
+                "WEEKLY", "0,1,2,3,4", dt.date(2026, 11, 21)
+            )
+        )
+
+    def test_weekly_progress_excludes_skipped_scheduled_day(self):
+        tracking = pd.DataFrame(
+            [
+                ("Shower", "11/16/2026", 1),
+                ("Shower", "11/17/2026", 1),
+            ],
+            columns=["HABIT_NAME", "DATE", "COUNT_COMPLETED"],
+        )
+        completed, target, label = habit_period_progress(
+            tracking,
+            "Shower",
+            dt.date(2026, 11, 18),
+            "WEEKLY",
+            "0,1,2,3,4",
+            skipped_dates={dt.date(2026, 11, 17)},
+        )
+        self.assertEqual((completed, target, label), (1, 4, "this week"))
+
+    def test_monthly_progress_counts_completed_dates_within_month(self):
+        tracking = pd.DataFrame(
+            [
+                ("Laundry", "11/02/2026", 1),
+                ("Laundry", "11/03/2026", 1),
+                ("Laundry", "10/31/2026", 1),
+            ],
+            columns=["HABIT_NAME", "DATE", "COUNT_COMPLETED"],
+        )
+        self.assertEqual(
+            habit_period_progress(
+                tracking,
+                "Laundry",
+                dt.date(2026, 11, 16),
+                "MONTHLY",
+                period_target=5,
+            ),
+            (2, 5, "this month"),
+        )
+
+    def test_skip_removes_date_from_completed_and_preserves_daily_streak(self):
+        skipped_date = dt.date(2026, 11, 11)
+        skip_days = pd.DataFrame(
+            [("Read", "11/11/2026")],
+            columns=["HABIT_NAME", "DATE"],
+        )
+        completed = completed_habits_for_date(
+            self.tracking,
+            skipped_date,
+            skipped_habits_for_date(skip_days, skipped_date),
+        )
+        self.assertEqual(completed, set())
+        self.assertEqual(
+            current_streak(
+                self.tracking,
+                "Read",
+                dt.date(2026, 11, 12),
+                {skipped_date},
+            ),
+            2,
+        )
+        self.assertEqual(
+            best_streak(self.tracking, "Read", {skipped_date}),
+            2,
         )
 
 
