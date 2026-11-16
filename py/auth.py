@@ -7,9 +7,9 @@ def _missing_google_settings() -> list[str]:
     required_settings = {
         "auth.redirect_uri": auth_settings.get("redirect_uri"),
         "auth.cookie_secret": auth_settings.get("cookie_secret"),
-        "auth.google.client_id": google_settings.get("client_id"),
-        "auth.google.client_secret": google_settings.get("client_secret"),
-        "auth.google.server_metadata_url": google_settings.get(
+        "auth.google.client_id": auth_settings.get("client_id"),
+        "auth.google.client_secret": auth_settings.get("client_secret"),
+        "auth.google.server_metadata_url": auth_settings.get(
             "server_metadata_url"
         ),
     }
@@ -38,13 +38,13 @@ def require_user() -> str:
 
     email = str(getattr(st.user, "email", "")).strip().lower()
     email_verified = getattr(st.user, "email_verified", False)
-    access_settings = st.secrets.get("access", {})
+    access_settings = st.secrets.get("admin", {})
     configured_emails = access_settings.get("emails", [])
 
     if not isinstance(configured_emails, list):
         st.error("The [access] emails setting must be a list.")
         st.stop()
-
+    
     allowed_emails = {
         allowed.strip().lower()
         for allowed in configured_emails
